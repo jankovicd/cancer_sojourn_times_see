@@ -43,7 +43,7 @@ ct_DNA_sensitivity[,3] <- c(30.5, 74.8, 82, 83.1, 11.2, 93.5,
                             81.8, 34.8, 70.6, 18.2, 46.2, 72.3, 66.7, 0, 80, 28)
 
 outputDir <- "/shared/storage/shiny0/cancer_sojourn_time"
-app_hosting <- "shiny_server" #"shiny.io" or "shiny_server" 
+app_hosting <- "shiny.io" #"shiny.io" or "shiny_server" 
 
 
 function (input, output, session) {
@@ -1823,4 +1823,5 @@ function (input, output, session) {
   
   
 }
+
 
