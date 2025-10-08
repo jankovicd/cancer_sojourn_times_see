@@ -21,7 +21,7 @@ cancer_types <- c("breast", "lung", "colorectal", "ovary", "prostate", "liver",
                   "cervix", "head_and_neck", "lymphoma", "oesophagus", "pancreas",
                   "anus", "bladder", "gallbladder", "kidney", "melanoma", "sarcoma", "stomach", "thyroid", "urothelial_tract", "uterus")
 
-cancer_types_with_screening_programmes <- c(1, 3, 7)
+cancer_types_with_screening_programmes <- c(1, 2, 3, 7)
 
 all_expert_ids <- c(1111,2222,3333,4444)
 
@@ -1823,5 +1823,6 @@ function (input, output, session) {
   
   
 }
+
 
 
