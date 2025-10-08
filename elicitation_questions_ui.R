@@ -346,7 +346,8 @@ f_section_3_quesions <- function(cancer_type_now)
   p(
     strong(paste0("Which of the following cancers (that you have already expressed beliefs about) do you believe ",
                   cancer_type_labels[cancer_type_now], " is likely to have the most similar overall mean sojourn time?")), br(),
-    em("Note that we are interested in all bladder cancers (ctDNA and non-ctDNA) in England. You can select more than one cancer type."), br(), br(),
+    em("Note that we are interested in all ", cancer_type_labels[cancer_type_now],
+       " (ctDNA and non-ctDNA) in England. You can select more than one cancer type."), br(), br(),
     checkboxGroupInput(paste0("section_3_", cancer_type_now)," ",c(
       "Breast" = 1,
       "Lung/Bronchus" = 2,

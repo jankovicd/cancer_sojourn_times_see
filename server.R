@@ -42,6 +42,9 @@ ct_DNA_sensitivity[,3] <- c(30.5, 74.8, 82, 83.1, 11.2, 93.5,
                             80, 85.7, 56.3, 85, 83.7,
                             81.8, 34.8, 70.6, 18.2, 46.2, 72.3, 66.7, 0, 80, 28)
 
+outputDir <- "/shared/storage/shiny0/cancer_sojourn_time"
+app_hosting <- "shiny_server" #"shiny.io" or "shiny_server" 
+
 
 function (input, output, session) {
   
@@ -121,9 +124,7 @@ function (input, output, session) {
   mode_omst_all <- reactiveValues(breast = integer(0))
   omst_late <- reactiveValues(breast = integer(0))
   lmst <- reactiveValues(breast = integer(0))
-  #omst_25 <- reactiveValues(breast = integer(0))
   omst_ctDNA <- reactiveValues(breast = integer(0))
-  #mode_omst_ctDNA <- reactiveValues(breast = integer(0))
   
   buttons <- reactiveValues(expert_id = integer(0), # expert's unique code provided by the investigator that distinguished their saved answers from others'
                             enter_unique_id = 0, # indicator (>0) that the expert has entered their unique identifier
@@ -350,9 +351,25 @@ function (input, output, session) {
   observeEvent(input$about_you_1,{
     about_you[["que1"]] <- input[["about_you_1"]]
   })
+  
+  observeEvent(input$about_you_2,{
+    about_you[["que2"]] <- input[["about_you_2"]]
+  })
+  
+  observeEvent(input$about_you_3,{
+    about_you[["que3"]] <- input[["about_you_3"]]
+  })
+  
+  observeEvent(input$about_you_4,{
+    about_you[["que4"]] <- input[["about_you_4"]]
+  })
 
   observeEvent(input$about_you_5,{
     about_you[["que5"]] <- input[["about_you_5"]]
+  })
+  
+  observeEvent(input$about_you_6,{
+    about_you[["que6"]] <- input[["about_you_6"]]
   })
   
   observeEvent(input$about_you_7,{
@@ -367,18 +384,35 @@ function (input, output, session) {
         
         buttons$enter_about_you <- 1
         
-        if(length(input[["about_you_2"]]) > 0){
-          about_you[["que2"]] <- input[["about_you_2"]]
+        # if(length(input[["about_you_2"]]) > 0){
+        #   about_you[["que2"]] <- input[["about_you_2"]]
+        # }
+        # if(length(input[["about_you_3"]]) > 0){
+        #   about_you[["que3"]] <- input[["about_you_3"]]
+        # }
+        # if(length(input[["about_you_4"]]) > 0){
+        #   about_you[["que4"]] <- input[["about_you_4"]]
+        # }
+        # if(length(input[["about_you_5"]]) > 0){
+        #   about_you[["que5"]] <- input[["about_you_5"]]
+        # }
+        # if(length(input[["about_you_6"]]) > 0){
+        #   about_you[["que6"]] <- input[["about_you_6"]]
+        # }
+        
+        #save_answers
+        
+        if(length(about_you[["que5"]]) > 0){
+          save_about_you <- c(buttons$expert_id,
+                             about_you$que1, about_you$que2, about_you$que3,
+                             about_you$que4, about_you$que5, about_you$que6, about_you$que7)
+        } else {
+          save_about_you <- c(buttons$expert_id,
+                             about_you$que1, about_you$que2, about_you$que3,
+                             about_you$que4, about_you$que6, about_you$que7)
         }
-        if(length(input[["about_you_3"]]) > 0){
-          about_you[["que3"]] <- input[["about_you_3"]]
-        }
-        if(length(input[["about_you_4"]]) > 0){
-          about_you[["que4"]] <- input[["about_you_4"]]
-        }
-        if(length(input[["about_you_6"]]) > 0){
-          about_you[["que6"]] <- input[["about_you_6"]]
-        }
+        
+        f_save(save_about_you, paste0(buttons$expert_id, "_about_you", ".csv"))
 
         
         if(about_you$que1 == 1){
@@ -397,28 +431,32 @@ function (input, output, session) {
           buttons$cancer_types_section_2 <- integer(0)
           buttons$cancer_types_section_3 <- integer(0)
           buttons$cancer_types_section_1_2 <- buttons$cancer_types
-          #buttons$cancer_type_labels <- cancer_type_labels[about_you$que7]
+         
+          temp <- rep(NA, 21)
           
-          for(q in 1:length(about_you$que7)){
+          for (i in 1:21){
             
-            buttons$cancer_type_labels[q] <- cancer_type_labels[which(1:21 == about_you$que7[q])]
+            if(i %in% about_you$que7){
+              temp[i] <- cancer_type_labels[i]
+            }
             
           }
+          
+          buttons$cancer_type_labels <- temp[which(!is.na(temp))]
           
           }
         
         # create a matrix of reactive values that populate the summary table. These later get updated when experts save each answer.
         temp_nrow <- length(buttons$cancer_types_section_1_2)
         temp_ncol <- 8
-        summary_table$d1 <- as.data.frame(matrix(rep(0, temp_ncol * temp_nrow), nrow=temp_nrow, ncol = temp_ncol))
+        summary_table$d1 <- as.data.frame(matrix(rep("-", temp_ncol * temp_nrow), nrow=temp_nrow, ncol = temp_ncol))
         colnames(summary_table$d1) <- c("Cancer type", "OMST w/o screening", "OMST w/ screening", "Sojourn time in most severe cancers", "OMST/EMST if diagnosed in early stages",
                                     "EMST if diagnosed in late stages", "LMST", "OMST for ctDNA cancers") 
         
         for (i in 1:temp_nrow){
-
-          # summary_table$d1[i,1] <- cancer_type_labels[buttons$cancer_types_section_1_2[i]]
-          # summary_table$d1[i,1] <- cancer_types[buttons$cancer_types_section_1_2[i]]
-
+          
+          summary_table$d1[i,1] <- buttons$cancer_type_labels[i]
+          
           if(!buttons$cancer_types_section_1_2[i] %in% cancer_types_with_screening_programmes){
             summary_table$d1[i,3] <- "NA"
           }
@@ -427,18 +465,6 @@ function (input, output, session) {
           }
           
         }
-
-        for(i in buttons$cancer_types_section_1_2){
-          tab_row <- which(buttons$cancer_types_section_1_2 == i)
-          summary_table$d1[tab_row,1] <- cancer_type_labels[i]
-        }
-        
-      
-        # for(i in 1: temp_nrow){
-        #   
-        #   rownames(summary_table$d1)[i] <- as.character(actionLink(inputId = paste0("view_",buttons$cancer_types[i]), label = buttons$cancer_type_lebels[i], onclick = sprintf("Shiny.setInputValue(id = paste0('click_', buttons$cancer_types[i]), value = %s);", gear)))
-        #     
-        # }
 
         
       } else {
@@ -470,9 +496,6 @@ function (input, output, session) {
       
       if(cell_col == 1){
         buttons$prognosis[buttons$cancer_type_live] <- 0
-      # } else if(cell_col == 2){
-      #   buttons$prognosis[buttons$cancer_type_live] <- 1
-      #   buttons$omst_graph[buttons$cancer_type_live] <- 0
       } else if(cell_col == 2){
         buttons$prognosis[buttons$cancer_type_live] <- 1
         buttons$omst_graph[buttons$cancer_type_live] <- 1
@@ -495,14 +518,6 @@ function (input, output, session) {
         buttons$next_que_1b[buttons$cancer_type_live] <- 1
         buttons$next_que_1c[buttons$cancer_type_live] <- 1
         buttons$next_que_2b[buttons$cancer_type_live] <- 0
-      # } else if(cell_col == 7){
-      #   buttons$prognosis[buttons$cancer_type_live] <- 1
-      #   buttons$omst_graph[buttons$cancer_type_live] <- 1
-      #   buttons$next_que_1a[buttons$cancer_type_live] <- 1
-      #   buttons$next_que_1b[buttons$cancer_type_live] <- 1
-      #   buttons$next_que_1c[buttons$cancer_type_live] <- 1
-      #   buttons$next_que_2a[buttons$cancer_type_live] <- 1
-      #   buttons$next_que_2b[buttons$cancer_type_live] <- 0
       } else if(cell_col == 8){
         buttons$prognosis[buttons$cancer_type_live] <- 1
         buttons$omst_graph[buttons$cancer_type_live] <- 1
@@ -677,95 +692,8 @@ function (input, output, session) {
     
   })
   
-  # lapply(X = 1:21, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("link_omst_graph_", i)]],{
-  #     
-  #     if(i %in% buttons$cancer_types_section_1_2){
-  #       
-  #       buttons$prognosis[i] <- 1
-  #       buttons$omst_graph[i] <- 0
-  #       buttons$back <- 0
-  #       
-  #     }
-  #     
-  #   })
-  #   
-  # })
-  
-  # lapply(X = 1:21, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("link_que_1a_", i)]],{
-  #     
-  #     if(i %in% buttons$cancer_types_section_1_2){
-  #       
-  #       buttons$prognosis[i] <- 1
-  #       buttons$omst_graph[i] <- 1
-  #       buttons$next_que_1a[i] <- 0
-  #       buttons$back <- 0
-  #       
-  #     }
-  #     
-  #   })
-  #   
-  # })
-  
-  # lapply(X = 1:21, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("link_que_1b_", i)]],{
-  #     
-  #     if(i %in% buttons$cancer_types_section_1_2){
-  #       
-  #       buttons$prognosis[i] <- 1
-  #       buttons$omst_graph[i] <- 1
-  #       buttons$next_que_1a[i] <- 1
-  #       buttons$next_que_1b[i] <- 0
-  #       buttons$back <- 0
-  #       
-  #     }
-  #     
-  #   })
-  #   
-  # })
-  
-  # lapply(X = 1:21, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("link_que_1c_", i)]],{
-  #     
-  #     if(i %in% buttons$cancer_types_section_1_2){
-  #       
-  #       buttons$prognosis[i] <- 1
-  #       buttons$omst_graph[i] <- 1
-  #       buttons$next_que_1a[i] <- 1
-  #       buttons$next_que_1b[i] <- 1
-  #       buttons$next_que_1c[i] <- 0
-  #       buttons$back <- 0
-  #       
-  #     }
-  #     
-  #   })
-  #   
-  # })
-  
+ 
   lapply(X = 1:21, FUN = function(i){
-    
-    # observeEvent(input[[paste0("link_que_2a_", i)]],{
-    #   
-    #   if(i %in% buttons$cancer_types_section_1){
-    #     
-    #     buttons$prognosis[i] <- 1
-    #     buttons$omst_graph[i] <- 1
-    #     buttons$next_que_1a[i] <- 1
-    #     buttons$next_que_1b[i] <- 1
-    #     buttons$next_que_1c[i] <- 1
-    #     buttons$next_que_2a[i] <- 0
-    #     buttons$back <- 0
-    #     
-    #     buttons$current_section <- 1
-    #     
-    #   }
-    #   
-    # })
     
     observeEvent(input[[paste0("link_que_2b_", i)]],{
       
@@ -776,7 +704,6 @@ function (input, output, session) {
         buttons$next_que_1a[i] <- 1
         buttons$next_que_1b[i] <- 1
         buttons$next_que_1c[i] <- 1
-        #buttons$next_que_2a[i] <- 1
         buttons$next_que_2b[i] <- 0
         buttons$back <- 0
         
@@ -787,71 +714,6 @@ function (input, output, session) {
     })
     
   })
-  
-  # lapply(X = buttons$cancer_types_section_1, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("link_que_2b_", i)]],{
-  #     
-  #     buttons$prognosis[i] <- 1
-  #     buttons$omst_graph[i] <- 1
-  #     buttons$next_que_1a[i] <- 1
-  #     buttons$next_que_1b[i] <- 1
-  #     buttons$next_que_1c[i] <- 1
-  #     buttons$next_que_2a[i] <- 1
-  #     buttons$next_que_2b[i] <- 0
-  #     buttons$back <- 0
-  #     
-  #   })
-  #   
-  # })
-  
-  # lapply(X = buttons$cancer_types_section_1_2, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("link_que_3_", i)]],{
-  #     
-  #     buttons$prognosis[i] <- 1
-  #     buttons$omst_graph[i] <- 1
-  #     buttons$next_que_1a[i] <- 1
-  #     buttons$next_que_1b[i] <- 1
-  #     buttons$next_que_1c[i] <- 1
-  #     buttons$next_que_2a[i] <- 1
-  #     buttons$next_que_2b[i] <- 1
-  #     buttons$next_que_3c[i] <- 0
-  #     buttons$back <- 0
-  #     
-  #   })
-  #   
-  # })
-  # 
-  # lapply(X = buttons$cancer_types_section_1_2, FUN = function(i){
-  #   
-  #   observeEvent(input[["link_back"]],{
-  #     
-  #     buttons$back <- 1
-  #     
-  #   })
-  #   
-  # })
-  # 
-  # lapply(X = buttons$cancer_types_section_1_2, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("prognosis_",i)]],{
-  #     
-  #     buttons$prognosis[i] <- 1
-  #     
-  #   })
-  #   
-  # })
-  # 
-  # lapply(X = buttons$cancer_types_section_1_2, FUN = function(i){
-  #   
-  #   observeEvent(input[[paste0("omst_graph_",i)]],{
-  #     
-  #     buttons$omst_graph[i] <- 1
-  #     
-  #   })
-  #   
-  # })
   
   observeEvent(input$section_3,{
     
@@ -873,9 +735,16 @@ function (input, output, session) {
     
     observeEvent(input[[paste0("next_que_section_3_", i)]],{
       
-      #buttons$next_que_section_3[i] <- 1
+      #if they've answered the questions, save the answer
+      if(length(elici_section_2[[que_name]]) > 0){
+        save_sec_3 <- c(buttons$expert_id, que_name, elici_section_3[[que_name]])
+        f_save(save_sec_3, paste0(buttons$expert_id, "_sec_3_", i, ".csv"))
+      }
+      
       if(i<21){
         buttons$cancer_type_live <- i+1
+      } else {
+        showModal(modalDialog (strong("This is the end of the elicitation. Thank you for taking part!", br(), "You can close the window now."), size="l"))
       }
 
       
@@ -891,9 +760,6 @@ function (input, output, session) {
     observeEvent(input[[paste0("show_plot_1a_",i)]],{
       
       if(i %in% buttons$cancer_types_section_1_2){
-      
-      #updateNavlistPanel(session, inputId = "elicitation_questions", selected = "Question 1a: OMST without screening")
-      updateTabsetPanel(session, inputId = "elicitation_questions", selected = "Question 1a: OMST without screening")
       
       que_name <- cancer_types[i]
       
@@ -1188,10 +1054,13 @@ function (input, output, session) {
         } else {
           
           tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
-          mode_omst_all[[que_name]] <- f_get_mode_from_histogram(chips_chips_1a[[que_name]], chips_lbins_1a[[que_name]], chips_rbins_1a[[que_name]])
+          mode_omst_all[[que_name]] <- round(f_get_mode_from_histogram(chips_chips_1a[[que_name]], chips_lbins_1a[[que_name]], chips_rbins_1a[[que_name]]), digits = 1)
           summary_table$d1[tab_row,2] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1a[[que_name]], " - ", elici_maxis_1a[[que_name]], ")")
           buttons$next_que_1a[i] <- 1
-          #add save
+          #save
+          save_que_1a <- c(buttons$expert_id, elici_minis_1a[[que_name]], elici_maxis_1a[[que_name]], chips_width_1a[[que_name]], chips_rbins_1a[[que_name]], chips_chips_1a[[que_name]])
+          f_save(save_que_1a, paste0(buttons$expert_id, "_que_1a_", i, ".csv"))
+          
           
         }
         
@@ -1220,7 +1089,9 @@ function (input, output, session) {
           mode_omst_all[[que_name]] <- f_get_mode_from_histogram(chips_chips_1a[[que_name]], chips_lbins_1a[[que_name]], chips_rbins_1a[[que_name]])
           summary_table$d1[tab_row,3] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1b[[que_name]], " - ", elici_maxis_1b[[que_name]], ")")
           buttons$next_que_1b[i] <- 1
-          #add save
+          #save
+          save_que_1b <- c(buttons$expert_id, elici_minis_1b[[que_name]], elici_maxis_1b[[que_name]], chips_width_1b[[que_name]], chips_rbins_1b[[que_name]], chips_chips_1b[[que_name]])
+          f_save(save_que_1b, paste0(buttons$expert_id, "_que_1b_", i, ".csv"))
           
         }
         
@@ -1246,6 +1117,9 @@ function (input, output, session) {
           summary_table$d1[tab_row,4] <- elici_1c[[que_name]]
           buttons$next_que_1c[i] <- 1
           #add save
+          save_que_1c <- c(buttons$expert_id, mode_omst_all[[que_name]], elici_1c[[que_name]], omst_ctDNA[[que_name]]) #add which distribution was fitted
+          f_save(save_que_1c, paste0(buttons$expert_id, "_que_1c_", i, ".csv"))
+          
           
         } else {
           
@@ -1274,7 +1148,7 @@ function (input, output, session) {
           omst_late[[que_name]] <- round((mode_omst_all[[que_name]] - (1 - proportion_diagnosed_in_late_stage[i]/100) * elici_2a[[que_name]]) / (proportion_diagnosed_in_late_stage[i]/100), digits = 1)
           summary_table$d1[tab_row,5] <- elici_2a[[que_name]]
           buttons$next_que_2a[i] <- 1
-          #add save
+          #add save?
           
         } else {
           
@@ -1305,7 +1179,6 @@ function (input, output, session) {
           summary_table$d1[tab_row,7] <- lmst[[que_name]]
           
           buttons$validate_que_2b[i] <- 1
-          #add save
           
         } else {
           
@@ -1325,23 +1198,10 @@ function (input, output, session) {
       
       if(i %in% buttons$cancer_types_section_1){
         
-        # que_name <- cancer_types[i]
-        # elici_2b[[que_name]] <- input[[paste0("elicit_2b_",i)]]
-        
-        # if(length(elici_2b[[que_name]]) > 0){
-        #   
-        #   tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
-        #   lmst[[que_name]] <- omst_late[[que_name]] - elici_2b[[que_name]]
-        #   summary_table$d1[tab_row,6] <- elici_2b[[que_name]]
-        #   summary_table$d1[tab_row,7] <- lmst[[que_name]]
-        #   
          buttons$next_que_2b[i] <- 1
-        #   
-        # } else {
-        #   
-        #   showModal(modalDialog ("Please make sure you have entered a value before proceeding.", size="l"))
-        #   
-        # }
+         # save
+         save_que_2 <- c(buttons$expert_id, mode_omst_all[[que_name]], elici_2a[[que_name]], omst_late[[que_name]], elici_2b[[que_name]], lmst[[que_name]]) #add which distribution was fitted
+         f_save(save_que_2, paste0(buttons$expert_id, "_que_2_", i, ".csv"))
         
       }
       
@@ -1443,8 +1303,12 @@ function (input, output, session) {
             
             tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
             summary_table$d1[tab_row,8] <- omst_ctDNA[[que_name]]
-            #buttons$next_que_3c[i] <- 1
             buttons$back <- 1
+            
+            # save
+            save_que_3 <- c(buttons$expert_id, elici_3a[[que_name]], elici_3b[[que_name]], omst_ctDNA) #add which distribution was fitted
+            f_save(save_que_3, paste0(buttons$expert_id, "_que_3_", i, ".csv"))
+            
             
             # if last cancer type in section 2, go to section 3
             if(i == tail(buttons$cancer_types_section_1, n = 1)){
@@ -1498,6 +1362,11 @@ function (input, output, session) {
           summary_table$d1[tab_row,8] <- paste0(omst_ctDNA[[que_name]], " (", elici_minis_3c[[que_name]], " - ", elici_maxis_3c[[que_name]], ")")
           buttons$next_que_3c[i] <- 1
           buttons$back <- 1
+          
+          # save
+          save_que_3 <- c(buttons$expert_id, elici_3a[[que_name]], elici_3b[[que_name]], elici_minis_3c[[que_name]], elici_maxis_3c[[que_name]], chips_width_3c[[que_name]], chips_rbins_3c[[que_name]], chips_chips_3c[[que_name]])
+          f_save(save_que_3, paste0(buttons$expert_id, "_que_3_", i, ".csv"))
+          
           
           # if last cancer type in section 2, go to section 3
           if(i == tail(buttons$cancer_types_section_1, n = 1)){
