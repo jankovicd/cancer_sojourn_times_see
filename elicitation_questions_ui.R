@@ -101,7 +101,6 @@ f_chips_and_bins_1b <- function(cancer_type_now,
                                 )
   
   (p(
-    br(), br(),
     strong(paste0("Q1b: What is the overall mean sojourn time (OMST) of ", cancer_type_labels[cancer_type_now], "s in England?")), br(),
     em("This includes clinically and screen-detected cancers."), br(), br(),
     p("I believe that it's very unlikely that:"),
@@ -191,7 +190,6 @@ f_chips_and_bins_3c <- function(cancer_type_now,
                                 mode_omst)
   
   (p(
-    br(), br(),
     strong(paste0("If OMST for all ", cancer_type_labels[cancer_type_now], "s (ctDNA and non-ctDNA) is ", mode_omst, " years, what do you believe is the OMST of ctDNA ", cancer_type_labels[cancer_type_now], "s?")), br(),br(),
     p("I believe that it's very unlikely that:"),
     tags$li(div(style = "display: inline-block; vertical-align:middle; width: 210px;",HTML(paste0("OMST is less than"))),

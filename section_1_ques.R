@@ -41,7 +41,7 @@ f_section_1_2_questions <- function(cancer_type_now,
                                     enter_plot_3c,
                                     comments_1a,
                                     comments_1b,
-                                    comments_1c,
+                                    comments_3c,
                                     elici_1c,
                                     elici_2a,
                                     elici_2b,
@@ -126,7 +126,7 @@ f_section_1_2_questions <- function(cancer_type_now,
     
   } else if(cancer_type_now %in% cancer_types_with_screening_programmes & buttons_next_que_1b == 0) {
     
-    cancer_name <- cancer_types[cancer_type_now]
+    #que_name <- cancer_types[cancer_type_now]
     
     tagList(div(
       f_chips_and_bins_1b(cancer_type_now,
@@ -159,7 +159,6 @@ f_section_1_2_questions <- function(cancer_type_now,
   } else if(section_no == 1 & buttons_next_que_2b == 0) {
     
     tagList(div(
-      
       strong("Q2a: What is the OMST for cancers diagnosed in early stages?"), br(),
       em("Note that this is the same as early-stage mean sojourn time (EMST) for cancers diagnosed in early stages."), br(), br(),
       "If OMST for", cancer_type_labels[cancer_type_now], "is", mode_omst_all, "years, and ",
@@ -253,7 +252,14 @@ f_section_1_2_questions <- function(cancer_type_now,
                    ))
             ),
             hr(), br(),
-            strong(paste0("Do you believe that the ctDNA cancers detected by Galleri are the most progressive of ", cancer_type_labels[cancer_type_now], "s?")), br(),
+          # "buttons_next_que_3a =", buttons_next_que_3a, br(),
+          # "elici_3a =", elici_3a, br(),
+          # "buttons_next_que_3b =", buttons_next_que_3b,br(),
+          # "elici_3b =", elici_3b,br(),
+          # "condition 1 = ", ifelse(buttons_next_que_3a == 1 & elici_3a == 0, 1, 0),br(),
+          # "condition 2 = ", ifelse(buttons_next_que_3b == 1 & elici_3b == 0, 1, 0),br(),
+          # "condition 12 = ", ifelse((buttons_next_que_3a == 1 & elici_3a == 0)|(buttons_next_que_3b == 1 & elici_3b == 0), 1, 0),br(),
+            strong(paste0("Do you believe that the ctDNA cancers detected by Galleri have the shortest sojourn time of all ", cancer_type_labels[cancer_type_now], "s?")), br(),
             radioButtons(paste0("elicit_3a_", cancer_type_now), "",
                          choices = c("Yes" = 1, "No" = 0),
                          selected = elici_3a),
@@ -284,7 +290,8 @@ f_section_1_2_questions <- function(cancer_type_now,
                    ), br(), br()
                  )),
                  tagList(div(""))),
-          ifelse((buttons_next_que_3a == 1 & elici_3a == 0) | (buttons_next_que_3b == 1 & elici_3b == 0),
+          #ifelse((buttons_next_que_3a == 1 & elici_3a == 0) | (buttons_next_que_3b == 1 & elici_3b == 0),
+          ifelse((buttons_next_que_3a == 1 & elici_3a == 0) | buttons_next_que_3b == 1,
                  tagList(div(
                    hr(), br(),
                    f_chips_and_bins_3c(cancer_type_now,

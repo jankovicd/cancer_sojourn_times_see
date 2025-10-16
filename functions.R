@@ -422,88 +422,13 @@ f_derive_omst_ctDNA <- function (mode_omst_all, elici_1c, ct_DNA_sensitivity){
 
 ####### saving functions (no longer used as Shiny no longer supports dropbox) #######
 
-# if(save_method == "dropbox") {
-# 
-#   #required for connection to dropbox
-# token <- if(file.exists("droptoken.rds")){readRDS("droptoken.rds")}else{NULL}
-# drop_acc(dtoken = token)
-# if(file.exists("droptoken.rds")){token$refresh()}else{NULL}
-# 
-# f_save_answers <- function(data,que_colnames,name1) {
-# 
-#   # function for saving in dropbox
-#   # can be edited to save elsewhere (e.g. locally)
-#   data <- t(data)
-#   colnames(data) <- que_colnames
-#   # Create a unique file name
-#   fileName <- name1
-# 
-#   if(is.null(token)){
-#     if (!dir.exists("SEE outputs")){
-#       dir.create("SEE outputs")
-#     }
-#     filePath <- file.path("SEE outputs",fileName)
-#     write.csv(data, filePath, row.names = FALSE, quote = TRUE)
-#   } else {
-#     # Write the data to a temporary file locally
-#     filePath <- file.path(tempdir(), fileName)
-#     write.csv(data, filePath, row.names = FALSE, quote = TRUE)
-#     # Upload the file to Dropbox
-#     drop_upload(filePath, path = folder_name, dtoken = token)
-#   }
-# 
-# }
-# 
-# f_load_answers <- function(unique_id) {
-# 
-#   if(is.null(token)){
-#     if (!dir.exists("SEE outputs")){
-#       dir.create("SEE outputs")
-#     }
-#     filesInfo <- dir("SEE outputs")
-#     if(length(filesInfo)==0){
-#       data <- NA
-#     } else {
-#       temp <- filesInfo[grep(unique_id, filesInfo)]
-#       if(length(temp) == 0){
-#         data <- NA
-#       } else {
-#         filePaths <- paste0("SEE outputs/",filesInfo[grep(unique_id, filesInfo)])
-#         data <- lapply(filePaths, read.csv, stringsAsFactors = FALSE)
-#         # Concatenate all data together into one data.frame
-#         data <- do.call(cbind, data)
-#       }
-# 
-#     }
-# 
-#     } else {
-# 
-#     filesInfo <- drop_dir(folder_name)
-#     if(nrow(filesInfo) == 0){
-#       data <- NA
-#     } else {
-#       temp <- filesInfo$path_display
-#       filePaths <- temp[grep(unique_id, temp)]
-#       if(length(filePaths) == 0){
-#         data <- NA
-#       } else {
-#         data <- lapply(filePaths, drop_read_csv, stringsAsFactors = FALSE)
-#         # Concatenate all data together into one data.frame
-#         data <- do.call(cbind, data)
-#       }
-# 
-#     }
-#     data
-# 
-#     }
-# }
-# 
-# }
-
-f_save <- function(data, name) {
+f_save <- function(data, que_colnames, name_of_file) {
+  
   data <- t(data)
+  colnames(data) <- que_colnames
   # Create a unique file name
-  fileName <- sprintf(name, as.integer(Sys.time()), digest::digest(data))
+  #fileName <- sprintf(name, as.integer(Sys.time()), digest::digest(data))
+  fileName <- name_of_file
   # Write the data to a temporary file locally
   filePath <- file.path(ifelse(app_hosting == "shiny.io", tempdir(), outputDir), fileName)
   write.csv(
@@ -511,4 +436,5 @@ f_save <- function(data, name) {
     file = filePath,
     row.names = FALSE, quote = TRUE)
 }
+
 

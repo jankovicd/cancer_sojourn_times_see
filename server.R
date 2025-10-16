@@ -1,8 +1,6 @@
 
-# cancer types not showing in table
 # add graphs
 # git dist to sojourn time 1c
-# formatting, particularly images for ctDNA summaries
 # add save
 
 library(DT)
@@ -23,7 +21,7 @@ cancer_types <- c("breast", "lung", "colorectal", "ovary", "prostate", "liver",
 
 cancer_types_with_screening_programmes <- c(1, 2, 3, 7)
 
-all_expert_ids <- c(1111,2222,3333,4444)
+all_expert_ids <- c(1111,2222,3333,4444, 0710, 0810, 1610, 1710, 2110, 22101, 22102, 2310, 27101, 27102, 2810, 2910, 3110)
 
 proportion_diagnosed_in_late_stage <- round(c(0.14632496, 0.71207422, 0.56682874, 0.60693454, 0.45755251, 0.67102804, 0.24155405, 0.62538332,
                                         0.67737544, 0.75448898, 0.77014604, 0.55223881, 0.24892561, 0.67700000, 0.42200536, 0.09929642,
@@ -42,15 +40,15 @@ ct_DNA_sensitivity[,3] <- c(30.5, 74.8, 82, 83.1, 11.2, 93.5,
                             80, 85.7, 56.3, 85, 83.7,
                             81.8, 34.8, 70.6, 18.2, 46.2, 72.3, 66.7, 0, 80, 28)
 
-outputDir <- "/shared/storage/shiny0/cancer_sojourn_time"
-app_hosting <- "shiny.io" #"shiny.io" or "shiny_server" 
+app_hosting <- "local" #"shiny.io", "local" or "shiny_server"
+outputDir <- ifelse(app_hosting == "shiny_server", "/mnt/shiny/cancer_sojourn_time", paste0(getwd(),"/saved_answers"))
 
 
 function (input, output, session) {
   
   ##### reactive values ##########
   
-  elici_minis_training <- reactiveValues(breast = integer(0)) # lower limit of expert's plausible range
+  elici_minis_training <- reactiveValues(test1 = integer(0)) # lower limit of expert's plausible range
   elici_maxis_training <- reactiveValues(test1 = integer(0), test2 = integer(0)) # upper limit of expert's plausible range
   chips_width_training <- reactiveValues(test1 = 0, test2 = 0) # bin width
   chips_lower_training <- reactiveValues(test1 = 0, test2 = 0) # lower limit of the plot
@@ -253,7 +251,263 @@ function (input, output, session) {
     if(buttons$expert_id %in% all_expert_ids){
       
           buttons$enter_unique_id <- 1
-          # add functions that upload previous responses
+          
+          # upload previous responses
+          
+          #if app hosted on shiny.io change the outputDir
+          #outputDir <- ifelse(app_hosting == "shiny.io", tempdir(), outputDir)
+          
+          # Read all the files into a list
+          files <-list.files(path = outputDir, pattern = as.character(buttons$expert_id), full.names = TRUE)
+          
+          if(length(files > 0)){
+            
+            # upload all files
+            data <- setNames(lapply(files, read.csv, stringsAsFactors = FALSE), files)
+            names(data)<- gsub(paste0(outputDir, "/", buttons$expert_id, "_"), "", names(data))
+            # data
+            
+            if("about_you.csv" %in% names(data)){
+              
+              temp_about_you <- data[["about_you.csv"]]
+              
+              about_you[["que1"]] <- temp_about_you["que1"]
+              about_you[["que2"]] <- ifelse("que2" %in% colnames(temp_about_you), temp_about_you[,"que2"], "Enter text")
+              about_you[["que3"]] <- ifelse("que3" %in% colnames(temp_about_you), temp_about_you[,"que3"], "Enter text")
+              about_you[["que4"]] <- ifelse("que4" %in% colnames(temp_about_you), temp_about_you[,"que4"], "Enter text")
+              about_you[["que5"]] <- ifelse("que5" %in% colnames(temp_about_you), temp_about_you[,"que5"], integer(0))
+              about_you[["que6"]] <- ifelse("que6" %in% colnames(temp_about_you), temp_about_you[,"que6"], "Enter text")
+              
+              if(temp_about_you[,"que1"] == 1){
+                about_you[["que7"]] <- integer(0)
+              } else {
+                about_you[["que7"]] <- as.vector(unlist(temp_about_you[,grep("que7", colnames(temp_about_you))]))
+              }
+              
+              if(about_you$que1 == 1){
+                
+                buttons$cancer_types <- 1:21
+                buttons$cancer_types_section_1 <-  1: 6
+                buttons$cancer_types_section_2 <-  7:11
+                buttons$cancer_types_section_3 <- 12:21
+                buttons$cancer_types_section_1_2<- 1:11
+                buttons$cancer_type_labels <- cancer_type_labels[1:21]
+                
+              } else {
+                
+                buttons$cancer_types <- about_you$que7
+                buttons$cancer_types_section_1 <- buttons$cancer_types
+                buttons$cancer_types_section_2 <- integer(0)
+                buttons$cancer_types_section_3 <- integer(0)
+                buttons$cancer_types_section_1_2 <- buttons$cancer_types
+                
+                temp <- rep(NA, 21)
+                
+                for (i in 1:21){
+                  
+                  if(i %in% about_you$que7){
+                    temp[i] <- cancer_type_labels[i]
+                  }
+                  
+                }
+                
+                buttons$cancer_type_labels <- temp[which(!is.na(temp))]
+                
+              }
+              
+              # create a matrix of reactive values that populate the summary table. These later get updated when experts save each answer.
+              temp_nrow <- length(buttons$cancer_types_section_1_2)
+              temp_ncol <- 8
+              summary_table$d1 <- as.data.frame(matrix(rep("-", temp_ncol * temp_nrow), nrow=temp_nrow, ncol = temp_ncol))
+              colnames(summary_table$d1) <- c("Cancer type", "OMST w/o screening", "OMST w/ screening", "Sojourn time in most severe cancers", "OMST/EMST if diagnosed in early stages",
+                                              "EMST if diagnosed in late stages", "LMST", "OMST for ctDNA cancers") 
+              
+              for (i in 1:temp_nrow){
+                
+                summary_table$d1[i,1] <- buttons$cancer_type_labels[i]
+                
+                if(!buttons$cancer_types_section_1_2[i] %in% cancer_types_with_screening_programmes){
+                  summary_table$d1[i,3] <- "NA"
+                }
+                if(buttons$cancer_types_section_1_2[i] %in% buttons$cancer_types_section_2){
+                  summary_table$d1[i,c(5,6,7)] <- "NA"
+                }
+                
+              }
+              
+              buttons$consent <- 1
+              buttons$next_que_test_1 <- 1
+              buttons$enter_about_you <- 1
+              
+            }
+            
+            for (i in 1:21){
+              
+              que_name <- cancer_types[i]
+              
+              if(paste0("que_1a_", i, ".csv") %in% names(data)){
+                
+                temp_que_1a <- data[[paste0("que_1a_", i, ".csv")]]
+                
+                elici_minis_1a[[que_name]] <- temp_que_1a[,"elici_minis"]
+                elici_maxis_1a[[que_name]] <- temp_que_1a[,"elici_maxis"]
+                chips_width_1a[[que_name]] <- temp_que_1a[,"bin_width"]
+                chips_lower_1a[[que_name]] <- f_lower(elici_minis_1a[[que_name]], chips_width_1a[[que_name]], 0)
+                chips_upper_1a[[que_name]] <- f_upper(elici_maxis_1a[[que_name]], chips_width_1a[[que_name]], NA)
+                chips_nbins_1a[[que_name]] <- f_nbins(chips_lower_1a[[que_name]], chips_upper_1a[[que_name]], chips_width_1a[[que_name]])
+                chips_nchip_1a[[que_name]] <- 2 * chips_nbins_1a[[que_name]]
+                chips_nhigh_1a[[que_name]] <- 2 * chips_nbins_1a[[que_name]]
+                chips_lbins_1a[[que_name]] <- f_lbins(chips_lower_1a[[que_name]], chips_upper_1a[[que_name]], chips_width_1a[[que_name]])
+                chips_rbins_1a[[que_name]] <- as.numeric(unlist(temp_que_1a[,grep("rbins", colnames(temp_que_1a))]))
+                chips_value_1a[[que_name]] <- chips_rbins_1a[[que_name]]
+                chips_chips_1a[[que_name]] <- as.numeric(unlist(temp_que_1a[,grep("chips", colnames(temp_que_1a))]))
+                show_plot_1a[[que_name]] <- 1
+                enter_plot_1a[[que_name]] <- 1
+                comments_1a[[que_name]] <- ifelse(length(grep("comments", colnames(temp_que_1a))) == 0, "Enter text here", temp_que_1a[,"comments"])
+                mode_omst_all[[que_name]] <- temp_que_1a[,"mode_omst_all"]
+                
+                tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
+                summary_table$d1[tab_row,2] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1a[[que_name]], " - ", elici_maxis_1a[[que_name]], ")")
+                
+                buttons$prognosis[i] <- 1
+                buttons$omst_graph[i] <- 1
+                buttons$next_que_1a[i] <- 1
+                
+                
+              }
+              
+              if(paste0("que_1b_", i, ".csv") %in% names(data)){
+                
+                temp_que_1b <- data[[paste0("que_1b_", i, ".csv")]]
+                
+                elici_minis_1b[[que_name]] <- temp_que_1b[,"elici_minis"]
+                elici_maxis_1b[[que_name]] <- temp_que_1b[,"elici_maxis"]
+                chips_width_1b[[que_name]] <- temp_que_1b[,"bin_width"]
+                chips_lower_1b[[que_name]] <- f_lower(elici_minis_1b[[que_name]], chips_width_1b[[que_name]], 0)
+                chips_upper_1b[[que_name]] <- f_upper(elici_maxis_1b[[que_name]], chips_width_1b[[que_name]], NA)
+                chips_nbins_1b[[que_name]] <- f_nbins(chips_lower_1b[[que_name]], chips_upper_1b[[que_name]], chips_width_1b[[que_name]])
+                chips_nchip_1b[[que_name]] <- 2 * chips_nbins_1b[[que_name]]
+                chips_nhigh_1b[[que_name]] <- 2 * chips_nbins_1b[[que_name]]
+                chips_lbins_1b[[que_name]] <- f_lbins(chips_lower_1b[[que_name]], chips_upper_1b[[que_name]], chips_width_1b[[que_name]])
+                chips_rbins_1b[[que_name]] <- as.numeric(unlist(temp_que_1b[,grep("rbins", colnames(temp_que_1b))]))
+                chips_value_1b[[que_name]] <- chips_rbins_1b[[que_name]]
+                chips_chips_1b[[que_name]] <- as.numeric(unlist(temp_que_1b[,grep("chips", colnames(temp_que_1b))]))
+                show_plot_1b[[que_name]] <- 1
+                enter_plot_1b[[que_name]] <- 1
+                comments_1b[[que_name]] <- ifelse(length(grep("comments", colnames(temp_que_1b))) == 0, "Enter text here", temp_que_1b[,"comments"])
+                mode_omst_all[[que_name]] <- temp_que_1a[,"mode_omst_all"]
+                
+                tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
+                summary_table$d1[tab_row,3] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1b[[que_name]], " - ", elici_maxis_1b[[que_name]], ")")
+                
+                buttons$next_que_1b[i] <- 1
+                
+              }
+              
+              if(paste0("que_1c_", i, ".csv") %in% names(data)){
+                
+                temp_que_1c <- data[[paste0("que_1c_", i, ".csv")]]
+                
+                elici_1c[[que_name]] <- temp_que_1c[,"elici_1c"]
+                omst_ctDNA[[que_name]] <- temp_que_1c[,"omst_ctDNA"]
+                
+                tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
+                summary_table$d1[tab_row,4] <- elici_1c[[que_name]]
+                
+                buttons$next_que_1c[i] <- 1
+                
+              }
+              
+              if(paste0("que_2_", i, ".csv") %in% names(data)){
+                
+                temp_que_2 <- data[[paste0("que_2_", i, ".csv")]]
+                
+                elici_2a[[que_name]] <- temp_que_2[,"elici_2a"]
+                elici_2b[[que_name]] <- temp_que_2[,"elici_2b"]
+                omst_late[[que_name]] <- temp_que_2[,"omst_late"]
+                lmst[[que_name]] <- temp_que_2[,"lmst"]
+                
+                tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
+                summary_table$d1[tab_row,5] <- elici_2a[[que_name]]
+                summary_table$d1[tab_row,6] <- elici_2b[[que_name]]
+                summary_table$d1[tab_row,7] <- lmst[[que_name]]
+                
+                buttons$next_que_2a[i] <- 1
+                buttons$next_que_2b[i] <- 1
+                buttons$validate_que_2b[i] <- 1
+                
+              }
+              
+              if(paste0("que_3_", i, ".csv") %in% names(data)){
+                
+                temp_que_3c <- data[[paste0("que_3_", i, ".csv")]]
+                
+                elici_3a[[que_name]] <- temp_que_3c[,"elici_3a"]
+                # elici_3b[[que_name]] <- temp_que_3c[,"elici_3b"]
+                elici_3b[[que_name]] <- ifelse(is.na(temp_que_3c[,"elici_3b"]), integer(0), temp_que_3c[,"elici_3b"])
+                # omst_ctDNA[[que_name]] <- temp_que_3c[,"omst_ctDNA"]
+                
+                temp_elici_3b <- ifelse(length(elici_3b[[que_name]]) == 0, 0, elici_3b[[que_name]])
+                
+                buttons$next_que_3a[i] <- 1
+                buttons$next_que_3b[i] <- 1
+                
+                if(elici_3a[[que_name]] == 0 | temp_elici_3b == 0){
+                  
+                  #elici_3c[[que_name]] <- 1
+                  
+                  elici_minis_3c[[que_name]] <- temp_que_3c[,"elici_minis"]
+                  elici_maxis_3c[[que_name]] <- temp_que_3c[,"elici_maxis"]
+                  chips_width_3c[[que_name]] <- temp_que_3c[,"bin_width"]
+                  chips_lower_3c[[que_name]] <- f_lower(elici_minis_3c[[que_name]], chips_width_3c[[que_name]], 0)
+                  chips_upper_3c[[que_name]] <- f_upper(elici_maxis_3c[[que_name]], chips_width_3c[[que_name]], NA)
+                  chips_nbins_3c[[que_name]] <- f_nbins(chips_lower_3c[[que_name]], chips_upper_3c[[que_name]], chips_width_3c[[que_name]])
+                  chips_nchip_3c[[que_name]] <- 2 * chips_nbins_3c[[que_name]]
+                  chips_nhigh_3c[[que_name]] <- 2 * chips_nbins_3c[[que_name]]
+                  chips_lbins_3c[[que_name]] <- f_lbins(chips_lower_3c[[que_name]], chips_upper_3c[[que_name]], chips_width_3c[[que_name]])
+                  chips_rbins_3c[[que_name]] <- as.numeric(unlist(temp_que_3c[,grep("rbins", colnames(temp_que_3c))]))
+                  chips_value_3c[[que_name]] <- chips_rbins_3c[[que_name]]
+                  chips_chips_3c[[que_name]] <- as.numeric(unlist(temp_que_3c[,grep("chips", colnames(temp_que_3c))]))
+                  show_plot_3c[[que_name]] <- 1
+                  enter_plot_3c[[que_name]] <- 1
+                  comments_3c[[que_name]] <- ifelse(length(grep("comments", colnames(temp_que_3c))) == 0, "Enter text here", temp_que_3c[,"comments"])
+                  
+                  tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
+                  summary_table$d1[tab_row,8] <- paste0(omst_ctDNA[[que_name]], " (", elici_minis_3c[[que_name]], " - ", elici_maxis_3c[[que_name]], ")")
+                  
+                  buttons$next_que_3c[i] <- 1
+                  
+                } else {
+                  
+                  tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
+                  summary_table$d1[tab_row,8] <- omst_ctDNA[[que_name]]
+                  
+                }
+                
+              }
+              
+            }
+            
+            for (i in 12:length(cancer_types)){
+              
+              if(paste0("sec_3_", i, ".csv") %in% names(data)){
+                
+                que_name <- cancer_types[i]
+                
+                temp_section_3 <- data[[paste0("sec_3_", i, ".csv")]]
+                
+                elici_section_3[[que_name]] <- temp_section_3[,grep("cancer_type_",colnames(temp_section_3))]
+                
+                buttons$next_que_section_3[i] <- 1
+                
+              }
+              
+            }
+            
+            # set "buttons$cancer_type_live"
+            
+          }
+          
           
     } else {
       
@@ -284,7 +538,7 @@ function (input, output, session) {
         enter_plot_training[["test1"]] <- 0 # do not show feedback on expert's plot
         
         # update plot parameters
-        chips_width_training[["test1"]] <- f_width(elici_minis_training[["test1"]], elici_maxis_training[["test1"]], bins)
+        chips_width_training[["test1"]] <- f_width(elici_minis_training[["test1"]], elici_maxis_training[["test1"]], bins[-(1:3)])
         chips_lower_training[["test1"]] <- f_lower(elici_minis_training[["test1"]], chips_width_training[["test1"]], 0) # remove last argument for OMST
         chips_upper_training[["test1"]] <- f_upper(elici_maxis_training[["test1"]], chips_width_training[["test1"]], NA) #remove last argument for OMST
         chips_nbins_training[["test1"]] <- f_nbins(chips_lower_training[["test1"]], chips_upper_training[["test1"]], chips_width_training[["test1"]])
@@ -356,10 +610,10 @@ function (input, output, session) {
     about_you[["que2"]] <- input[["about_you_2"]]
   })
   
-  observeEvent(input$about_you_3,{
+    observeEvent(input$about_you_3,{
     about_you[["que3"]] <- input[["about_you_3"]]
   })
-  
+
   observeEvent(input$about_you_4,{
     about_you[["que4"]] <- input[["about_you_4"]]
   })
@@ -385,7 +639,7 @@ function (input, output, session) {
         buttons$enter_about_you <- 1
         
         # if(length(input[["about_you_2"]]) > 0){
-        #   about_you[["que2"]] <- input[["about_you_2"]]
+        #   about_you_que2() <- input[["about_you_2"]]
         # }
         # if(length(input[["about_you_3"]]) > 0){
         #   about_you[["que3"]] <- input[["about_you_3"]]
@@ -402,17 +656,22 @@ function (input, output, session) {
         
         #save_answers
         
-        if(length(about_you[["que5"]]) > 0){
-          save_about_you <- c(buttons$expert_id,
-                             about_you$que1, about_you$que2, about_you$que3,
-                             about_you$que4, about_you$que5, about_you$que6, about_you$que7)
-        } else {
-          save_about_you <- c(buttons$expert_id,
-                             about_you$que1, about_you$que2, about_you$que3,
-                             about_you$que4, about_you$que6, about_you$que7)
+        save_about_you <- c(buttons$expert_id,
+                            about_you$que1, about_you$que2, about_you$que3,
+                            about_you$que4, about_you$que5, about_you$que6, about_you$que7)
+        save_about_you_colnames <- c("expert_id", "que1", "que2", "que3", "que4", "que5", "que6")
+        
+        #if they don't answer que5, remove it from colnames (it's already integer(0) in save_about_you so doesn't need removing)
+        if(length(about_you[["que5"]]) == 0){
+          save_about_you_colnames <- save_about_you_colnames[-6]
         }
         
-        f_save(save_about_you, paste0(buttons$expert_id, "_about_you", ".csv"))
+        #if they answer que7, add more colnames)
+        if(length(about_you[["que7"]]) > 0){
+          save_about_you_colnames <- c(save_about_you_colnames, paste0("que7_", 1:length(about_you[["que7"]])))
+        }
+        
+        f_save(save_about_you, save_about_you_colnames, paste0(buttons$expert_id, "_about_you.csv"))
 
         
         if(about_you$que1 == 1){
@@ -736,8 +995,9 @@ function (input, output, session) {
     observeEvent(input[[paste0("next_que_section_3_", i)]],{
       
       #if they've answered the questions, save the answer
-      if(length(elici_section_2[[que_name]]) > 0){
+      if(length(elici_section_3[[que_name]]) > 0){
         save_sec_3 <- c(buttons$expert_id, que_name, elici_section_3[[que_name]])
+        save_sec_3_colnames <- c("expert_id", "cancer_type", paste0("cancert_type_", 1:length(elici_section_3[[que_name]])))
         f_save(save_sec_3, paste0(buttons$expert_id, "_sec_3_", i, ".csv"))
       }
       
@@ -770,7 +1030,7 @@ function (input, output, session) {
       #check whether plausible range is within parameter limits and elici_minis < elici_maxis
       condition_1a <- f_cond_min_max(elici_minis_1a[[que_name]], elici_maxis_1a[[que_name]], 0, NA) #remove latter two arguments for OMST
       
-      if(condition_1a==1){
+      if(condition_1a == 1){
         
         show_plot_1a[[que_name]] <- 1 # show plot
         enter_plot_1a[[que_name]] <- 0 # do not show feedback on expert's plot
@@ -1058,8 +1318,9 @@ function (input, output, session) {
           summary_table$d1[tab_row,2] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1a[[que_name]], " - ", elici_maxis_1a[[que_name]], ")")
           buttons$next_que_1a[i] <- 1
           #save
-          save_que_1a <- c(buttons$expert_id, elici_minis_1a[[que_name]], elici_maxis_1a[[que_name]], chips_width_1a[[que_name]], chips_rbins_1a[[que_name]], chips_chips_1a[[que_name]])
-          f_save(save_que_1a, paste0(buttons$expert_id, "_que_1a_", i, ".csv"))
+          save_que_1a <- c(buttons$expert_id, elici_minis_1a[[que_name]], elici_maxis_1a[[que_name]], chips_width_1a[[que_name]], chips_rbins_1a[[que_name]], chips_chips_1a[[que_name]], comments_1a[[que_name]], mode_omst_all[[que_name]])
+          save_que_1a_colnames <- c("expert_id", "elici_minis", "elici_maxis", "bin_width", paste0("rbins_", 1:length(chips_rbins_1a[[que_name]])), paste0("chips_", 1:length(chips_chips_1a[[que_name]])), "comments", "mode_omst_all")
+          f_save(save_que_1a, save_que_1a_colnames, paste0(buttons$expert_id, "_que_1a_", i, ".csv"))
           
           
         }
@@ -1090,8 +1351,9 @@ function (input, output, session) {
           summary_table$d1[tab_row,3] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1b[[que_name]], " - ", elici_maxis_1b[[que_name]], ")")
           buttons$next_que_1b[i] <- 1
           #save
-          save_que_1b <- c(buttons$expert_id, elici_minis_1b[[que_name]], elici_maxis_1b[[que_name]], chips_width_1b[[que_name]], chips_rbins_1b[[que_name]], chips_chips_1b[[que_name]])
-          f_save(save_que_1b, paste0(buttons$expert_id, "_que_1b_", i, ".csv"))
+          save_que_1b <- c(buttons$expert_id, elici_minis_1b[[que_name]], elici_maxis_1b[[que_name]], chips_width_1b[[que_name]], chips_rbins_1b[[que_name]], chips_chips_1b[[que_name]], comments_1b[[que_name]], mode_omst_all[[que_name]])
+          save_que_1b_colnames <- c("expert_id", "elici_minis", "elici_maxis", "bin_width", paste0("rbins_", 1:length(chips_rbins_1b[[que_name]])), paste0("chips_", 1:length(chips_chips_1b[[que_name]])), "comments", "mode_omst_all")
+          f_save(save_que_1b, save_que_1b_colnames, paste0(buttons$expert_id, "_que_1b_", i, ".csv"))
           
         }
         
@@ -1118,7 +1380,8 @@ function (input, output, session) {
           buttons$next_que_1c[i] <- 1
           #add save
           save_que_1c <- c(buttons$expert_id, mode_omst_all[[que_name]], elici_1c[[que_name]], omst_ctDNA[[que_name]]) #add which distribution was fitted
-          f_save(save_que_1c, paste0(buttons$expert_id, "_que_1c_", i, ".csv"))
+          save_que_1c_colnames <- c("expert_id", "mode_omst_all", "elici_1c", "omst_ctDNA")
+          f_save(save_que_1c, save_que_1c_colnames, paste0(buttons$expert_id, "_que_1c_", i, ".csv"))
           
           
         } else {
@@ -1198,10 +1461,13 @@ function (input, output, session) {
       
       if(i %in% buttons$cancer_types_section_1){
         
+        que_name <- cancer_types[i]
+        
          buttons$next_que_2b[i] <- 1
          # save
          save_que_2 <- c(buttons$expert_id, mode_omst_all[[que_name]], elici_2a[[que_name]], omst_late[[que_name]], elici_2b[[que_name]], lmst[[que_name]]) #add which distribution was fitted
-         f_save(save_que_2, paste0(buttons$expert_id, "_que_2_", i, ".csv"))
+         save_que_2_colnames <- c("expert_id", "mode_omst_all", "elici_2a", "omst_late", "elici_2b", "lmst")
+         f_save(save_que_2, save_que_2_colnames, paste0(buttons$expert_id, "_que_2_", i, ".csv"))
         
       }
       
@@ -1306,8 +1572,9 @@ function (input, output, session) {
             buttons$back <- 1
             
             # save
-            save_que_3 <- c(buttons$expert_id, elici_3a[[que_name]], elici_3b[[que_name]], omst_ctDNA) #add which distribution was fitted
-            f_save(save_que_3, paste0(buttons$expert_id, "_que_3_", i, ".csv"))
+            save_que_3 <- c(buttons$expert_id, elici_3a[[que_name]], elici_3b[[que_name]], omst_ctDNA[[que_name]]) #add which distribution was fitted
+            save_que_3_colnames <- c("expert_id", "elici_3a", "elici_3b", "omst_ctDNA")
+            f_save(save_que_3, save_que_3_colnames, paste0(buttons$expert_id, "_que_3_", i, ".csv"))
             
             
             # if last cancer type in section 2, go to section 3
@@ -1364,18 +1631,22 @@ function (input, output, session) {
           buttons$back <- 1
           
           # save
-          save_que_3 <- c(buttons$expert_id, elici_3a[[que_name]], elici_3b[[que_name]], elici_minis_3c[[que_name]], elici_maxis_3c[[que_name]], chips_width_3c[[que_name]], chips_rbins_3c[[que_name]], chips_chips_3c[[que_name]])
-          f_save(save_que_3, paste0(buttons$expert_id, "_que_3_", i, ".csv"))
-          
+          save_que_3 <- c(buttons$expert_id, elici_3a[[que_name]], ifelse(length(elici_3b[[que_name]]) > 0, elici_3b[[que_name]], "NA"), omst_ctDNA[[que_name]], elici_minis_3c[[que_name]], elici_maxis_3c[[que_name]], chips_width_3c[[que_name]], chips_rbins_3c[[que_name]], chips_chips_3c[[que_name]], comments_3c[[que_name]])
+          save_que_3_colnames <- c("expert_id", "elici_3a", "elici_3b", "omst_ctDNA", "elici_minis", "elici_maxis", "bin_width", paste0("rbins_", 1:length(chips_rbins_3c[[que_name]])), paste0("chips_", 1:length(chips_chips_3c[[que_name]])), "comments")
+          f_save(save_que_3, save_que_3_colnames, paste0(buttons$expert_id, "_que_3_", i, ".csv"))
           
           # if last cancer type in section 2, go to section 3
           if(i == tail(buttons$cancer_types_section_1, n = 1)){
             
             buttons$current_section <- 2
             
-          } else if(i == tail(buttons$cancer_types_section_2, n = 1)){
+          } else if(length(buttons$cancer_types_section_2)>0){
             
-            buttons$current_section <- 3
+            if(i == tail(buttons$cancer_types_section_2, n = 1)){
+              
+              buttons$current_section <- 3
+              
+            }
             
           }
           #add save
@@ -1823,6 +2094,4 @@ function (input, output, session) {
   
   
 }
-
-
 
