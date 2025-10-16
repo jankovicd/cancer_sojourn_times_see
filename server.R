@@ -40,7 +40,7 @@ ct_DNA_sensitivity[,3] <- c(30.5, 74.8, 82, 83.1, 11.2, 93.5,
                             80, 85.7, 56.3, 85, 83.7,
                             81.8, 34.8, 70.6, 18.2, 46.2, 72.3, 66.7, 0, 80, 28)
 
-app_hosting <- "local" #"shiny.io", "local" or "shiny_server"
+app_hosting <- "shiny_server" #"shiny.io", "local" or "shiny_server"
 outputDir <- ifelse(app_hosting == "shiny_server", "/mnt/shiny/cancer_sojourn_time", paste0(getwd(),"/saved_answers"))
 
 
@@ -2094,4 +2094,5 @@ function (input, output, session) {
   
   
 }
+
 
