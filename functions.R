@@ -315,6 +315,120 @@ f_text_fback_chips <- function(chips_chips,chips_lbins,chips_rbins){
 
 }
 
+# same as above but for test plot
+f_text_hist_feedback1_test <- function(a, b)
+  (paste0("There is a 98% probability that the number of rainy days is between ",
+          a, " and ", b))
+
+f_text_hist_feedback2_test <- function(a, b, c, d)
+  (paste0("The number of rainy days is equally likely to be between ",
+          a, " and ", b, ", as it is to be between ", c, " and ",d))
+
+f_text_hist_feedback3_test <- function(a, b, c)
+  (paste0("There is a ", a, "% probability that the number of rainy days is between ",
+          b, " and ", c))
+
+
+f_text_fback_chips_test <- function(chips_chips,chips_lbins,chips_rbins){
+  
+  # function for feedback text for experts' plots
+  # e.g. if flat prior, returns f_text_hist_feedback1
+  # e.g. if the prior has a mode, returns f_text_hist_feedback3 for
+  # the mode, and the range on either side of the mode
+  
+  valss<-rep(0,7)
+  x<-which(chips_chips!=0) # number of bins with at least one chip
+  
+  if (length(x)!=0){
+    
+    a<-chips_chips[x]
+    b<-length(a)
+    c<-chips_lbins[x]
+    d<-chips_rbins[x]
+    
+    y<-which(a==max(a))
+    z<-which(diff(y)==1)
+    mmode<-y[1:ifelse(length(z)==0,1,length(z)+1)]
+    l_mode<-c[mmode[1]]
+    r_mode<-d[mmode[length(mmode)]]
+    p_mode<-sum(a[mmode])/sum(a)
+    p_less<-ifelse(mmode[1]>1,sum(a[1:(mmode[1]-1)])/sum(a),0)
+    p_more<-ifelse(mmode[length(mmode)]<b,sum(a[-(1:mmode[length(mmode)])])/sum(a),0)
+    
+    if(p_mode==1&length(mmode)==1){
+      vec<-1
+      valss[1]<-l_mode
+      valss[2]<-r_mode
+      wording<-tags$li(f_text_hist_feedback1_test(l_mode,r_mode))
+    }
+    
+    if(p_mode==1&length(mmode)!=1){
+      
+      if(is.integer(length(mmode)/2)){
+        vec<-2
+        t_ratio<-length(mmode)/2
+        valss[1]<-sum(a[1:t_ratio])/sum(a)
+        valss[2]<-c[1]
+        valss[3]<-d[t_ratio]
+        valss[4]<-d[b]
+        
+        temptext1<-f_text_hist_feedback1_test(l_mode,r_mode)
+        temptext2<-f_text_hist_feedback2_test(c[1],d[t_ratio],d[t_ratio],d[b])
+        wording<-tagList(div(tags$li(temptext1),
+                             tags$li(temptext2)))
+        
+      }else{
+        vec<-3
+        t_ratio<-ceiling(length(mmode)/2)
+        valss[1]<-round(sum(a[1:t_ratio])/sum(a),digits=2)
+        valss[2]<-c[1]
+        valss[3]<-d[t_ratio]
+        valss[4]<-d[b]
+        
+        temptext1<-f_text_hist_feedback1_test(l_mode,r_mode)
+        temptext2<-f_text_hist_feedback3_test((valss[1]*100),c[1],d[t_ratio])
+        
+        wording<-tagList(div(tags$li(temptext1),
+                             tags$li(temptext2)))
+      }
+      
+    }
+    
+    if(p_mode!=1&(p_less==0|p_more==0)){
+      
+      temptext1<-f_text_hist_feedback3_test(round(p_mode*100),l_mode,r_mode)
+      
+      if(p_less!=0){
+        temptext2<-f_text_hist_feedback3_test(round(p_less*100),c[1],l_mode)
+      }else{
+        temptext2<-f_text_hist_feedback3_test(round(p_more*100),r_mode,d[b])
+      }
+      
+      wording<-tagList(div(tags$li(temptext1),
+                           tags$li(temptext2)))
+      
+    }
+    
+    if(p_less!=0&p_more!=0){
+      
+      temptext2<-f_text_hist_feedback3_test(round(p_mode*100),l_mode,r_mode)
+      
+      temptext1<-f_text_hist_feedback3_test(round(p_less*100),c[1],l_mode)
+      
+      temptext3<-f_text_hist_feedback3_test(round(p_more*100),r_mode,d[b])
+      
+      wording<-tagList(div(tags$li(temptext1),
+                           tags$li(temptext2),
+                           tags$li(temptext3)))
+      
+    }
+    
+    wording
+    
+  }
+  
+}
+
 
 #### conditions ####
 

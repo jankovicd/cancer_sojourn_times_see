@@ -21,7 +21,7 @@ cancer_types <- c("breast", "lung", "colorectal", "ovary", "prostate", "liver",
 
 cancer_types_with_screening_programmes <- c(1, 2, 3, 7)
 
-all_expert_ids <- c(1111,2222,3333,4444, 0710, 0810, 1610, 1710, 2110, 22101, 22102, 2310, 27101, 27102, 2810, 2910, 3110)
+all_expert_ids <- c(1111,2222,3333,4444, 0710, 0810, 1610, 1710, 2110, 22101, 22102, 22103, 2310, 27101, 27102, 2810, 2910, 3110)
 
 proportion_diagnosed_in_late_stage <- round(c(0.14632496, 0.71207422, 0.56682874, 0.60693454, 0.45755251, 0.67102804, 0.24155405, 0.62538332,
                                         0.67737544, 0.75448898, 0.77014604, 0.55223881, 0.24892561, 0.67700000, 0.42200536, 0.09929642,
@@ -120,6 +120,7 @@ function (input, output, session) {
   elici_3b <- reactiveValues(breast = integer(0))
   elici_section_3 <- reactiveValues(breast = integer(0))
   mode_omst_all <- reactiveValues(breast = integer(0))
+  mode_omst_ctDNA <- reactiveValues(breast = 0)
   omst_late <- reactiveValues(breast = integer(0))
   lmst <- reactiveValues(breast = integer(0))
   omst_ctDNA <- reactiveValues(breast = integer(0))
@@ -236,7 +237,7 @@ function (input, output, session) {
     lmst[[que_name]] <- integer(0)
     #omst_25[[que_name]] <- integer(0)
     omst_ctDNA[[que_name]] <- integer(0)
-    #mode_omst_ctDNA[[que_name]] <- integer(0)
+    mode_omst_ctDNA[[que_name]] <- 0
     
     
   }
@@ -255,7 +256,7 @@ function (input, output, session) {
           # upload previous responses
           
           #if app hosted on shiny.io change the outputDir
-          #outputDir <- ifelse(app_hosting == "shiny.io", tempdir(), outputDir)
+          outputDir <- ifelse(app_hosting == "shiny.io", tempdir(), outputDir)
           
           # Read all the files into a list
           files <-list.files(path = outputDir, pattern = as.character(buttons$expert_id), full.names = TRUE)
@@ -472,8 +473,10 @@ function (input, output, session) {
                   enter_plot_3c[[que_name]] <- 1
                   comments_3c[[que_name]] <- ifelse(length(grep("comments", colnames(temp_que_3c))) == 0, "Enter text here", temp_que_3c[,"comments"])
                   
+                  mode_omst_ctDNA[[que_name]] <- round(f_get_mode_from_histogram(chips_chips_3c[[que_name]], chips_lbins_3c[[que_name]], chips_rbins_3c[[que_name]]), digits = 1)
+                  
                   tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
-                  summary_table$d1[tab_row,8] <- paste0(omst_ctDNA[[que_name]], " (", elici_minis_3c[[que_name]], " - ", elici_maxis_3c[[que_name]], ")")
+                  summary_table$d1[tab_row,8] <- paste0(mode_omst_ctDNA[[que_name]], " (", elici_minis_3c[[que_name]], " - ", elici_maxis_3c[[que_name]], ")")
                   
                   buttons$next_que_3c[i] <- 1
                   
@@ -755,6 +758,7 @@ function (input, output, session) {
       
       if(cell_col == 1){
         buttons$prognosis[buttons$cancer_type_live] <- 0
+        buttons$omst_graph[buttons$cancer_type_live] <- 0
       } else if(cell_col == 2){
         buttons$prognosis[buttons$cancer_type_live] <- 1
         buttons$omst_graph[buttons$cancer_type_live] <- 1
@@ -1169,7 +1173,7 @@ function (input, output, session) {
         que_name <- cancer_types[i]
         
         #updateNavlistPanel(session, inputId = "elicitation_questions", selected = "Question 1a: OMST without screening")
-        updateTabsetPanel(session, inputId = "elicitation_questions", selected = "Question 1a: OMST without screening")
+        # updateTabsetPanel(session, inputId = "elicitation_questions", selected = "Question 1a: OMST without screening")
         
         if(round(chips_nchip_1a[[que_name]]-sum(chips_chips_1a[[que_name]]),digits=0) > 0 ){
           
@@ -1306,7 +1310,8 @@ function (input, output, session) {
         
         que_name <- cancer_types[i]
         
-        if(sum(chips_chips_1a[[que_name]]) < chips_nchip_1a[[que_name]]){
+        if(round(chips_nchip_1a[[que_name]] - sum(chips_chips_1a[[que_name]]), digits=0) > 0){
+        #if(sum(chips_chips_1a[[que_name]]) < chips_nchip_1a[[que_name]]){
           
           # show error message if not all chips are used
           showModal(modalDialog(strong("Please make sure you use all the available chips before proceeding."), size="l"))
@@ -1339,7 +1344,8 @@ function (input, output, session) {
         
         que_name <- cancer_types[i]
         
-        if(sum(chips_chips_1b[[que_name]]) < chips_nchip_1b[[que_name]]){
+        if(round(chips_nchip_1b[[que_name]] - sum(chips_chips_1b[[que_name]]), digits=0) > 0){
+        # if(sum(chips_chips_1b[[que_name]]) < chips_nchip_1b[[que_name]]){
           
           # show error message if not all chips are used
           showModal(modalDialog(strong("Please make sure you use all the available chips before proceeding."), size="l"))
@@ -1347,7 +1353,7 @@ function (input, output, session) {
         } else {
           
           tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
-          mode_omst_all[[que_name]] <- f_get_mode_from_histogram(chips_chips_1a[[que_name]], chips_lbins_1a[[que_name]], chips_rbins_1a[[que_name]])
+          mode_omst_all[[que_name]] <- round(f_get_mode_from_histogram(chips_chips_1b[[que_name]], chips_lbins_1b[[que_name]], chips_rbins_1b[[que_name]]), digits = 1)
           summary_table$d1[tab_row,3] <- paste0(mode_omst_all[[que_name]], " (", elici_minis_1b[[que_name]], " - ", elici_maxis_1b[[que_name]], ")")
           buttons$next_que_1b[i] <- 1
           #save
@@ -1617,7 +1623,8 @@ function (input, output, session) {
         
         que_name <- cancer_types[i]
         
-        if(sum(chips_chips_3c[[que_name]]) < chips_nchip_3c[[que_name]]){
+        if(round(chips_nchip_3c[[que_name]] - sum(chips_chips_3c[[que_name]]), digits=0) > 0){
+        # if(sum(chips_chips_3c[[que_name]]) < chips_nchip_3c[[que_name]]){
           
           # show error message if not all chips are used
           showModal(modalDialog (strong("Please make sure you use all the available chips before proceeding."), size="l"))
@@ -1625,8 +1632,10 @@ function (input, output, session) {
           
         } else {
           
+          mode_omst_ctDNA[[que_name]] <- round(f_get_mode_from_histogram(chips_chips_3c[[que_name]], chips_lbins_3c[[que_name]], chips_rbins_3c[[que_name]]), digits = 1)
+          
           tab_row <- which(summary_table$d1[,1] == cancer_type_labels[i])
-          summary_table$d1[tab_row,8] <- paste0(omst_ctDNA[[que_name]], " (", elici_minis_3c[[que_name]], " - ", elici_maxis_3c[[que_name]], ")")
+          summary_table$d1[tab_row,8] <- paste0(mode_omst_ctDNA[[que_name]], " (", elici_minis_3c[[que_name]], " - ", elici_maxis_3c[[que_name]], ")")
           buttons$next_que_3c[i] <- 1
           buttons$back <- 1
           
@@ -1659,23 +1668,7 @@ function (input, output, session) {
     
   })
   
-  # # error message when expert's plausible range is not within parameter limits or max < min
-  # output$no_plot<-renderUI({
-  #   
-  #   tagList(div(
-  #     p(strong("Please make sure you've entered the minimum and the
-  #              maximum, and that the minimum is lower than the maximum."))
-  #   ))
-  #   
-  # })
-  # 
-  # output$no_chips<-renderUI({
-  #   
-  #   tagList(div(
-  #     p(strong("Please make sure you use all the available chips before proceeding."))
-  #   ))
-  #   
-  # })
+
   
   ##### summary table #####
   
@@ -2094,5 +2087,4 @@ function (input, output, session) {
   
   
 }
-
 
