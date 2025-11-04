@@ -252,13 +252,6 @@ f_section_1_2_questions <- function(cancer_type_now,
                    ))
             ),
             hr(), br(),
-          # "buttons_next_que_3a =", buttons_next_que_3a, br(),
-          # "elici_3a =", elici_3a, br(),
-          # "buttons_next_que_3b =", buttons_next_que_3b,br(),
-          # "elici_3b =", elici_3b,br(),
-          # "condition 1 = ", ifelse(buttons_next_que_3a == 1 & elici_3a == 0, 1, 0),br(),
-          # "condition 2 = ", ifelse(buttons_next_que_3b == 1 & elici_3b == 0, 1, 0),br(),
-          # "condition 12 = ", ifelse((buttons_next_que_3a == 1 & elici_3a == 0)|(buttons_next_que_3b == 1 & elici_3b == 0), 1, 0),br(),
             strong(paste0("Do you believe that the ctDNA cancers detected by Galleri have the shortest sojourn time of all ", cancer_type_labels[cancer_type_now], "s?")), br(),
             radioButtons(paste0("elicit_3a_", cancer_type_now), "",
                          choices = c("Yes" = 1, "No" = 0),
@@ -275,9 +268,9 @@ f_section_1_2_questions <- function(cancer_type_now,
                           ct_DNA_sensitivity[cancer_type_now,"early"],"% of cancers in early stages, ",
                           ct_DNA_sensitivity[cancer_type_now,"late"] ,"% of cancers 
                           in late stages)."), br(), br(),
-                   paste0("The predicted sojourn time for the ", ct_DNA_sensitivity[cancer_type_now,"total"],
-                          "% fastest progressing ", cancer_type_labels[cancer_type_now],
-                          "s (using a statistical model applied to your answer to question 1c) is ",
+                   paste0("If OMST for all ", cancer_type_labels[cancer_type_now], "s is ", mode_omst_all," years, the predicted sojourn time for the ", ct_DNA_sensitivity[cancer_type_now,"total"],
+                          "% of ", cancer_type_labels[cancer_type_now],
+                          "s with the shortest sojourn time (using a statistical model applied to your answer to question 1c) is ",
                           omst_ctDNA, " years. "), br(), br(),
                    strong("Is this value reflective of your beliefs on the MST of the ctDNA cancers detected by the Galleri test?"),
                    radioButtons(paste0("elicit_3b_", cancer_type_now), "",
@@ -294,6 +287,10 @@ f_section_1_2_questions <- function(cancer_type_now,
           ifelse((buttons_next_que_3a == 1 & elici_3a == 0) | buttons_next_que_3b == 1,
                  tagList(div(
                    hr(), br(),
+                   paste0("Galleri test sensitivity for ", cancer_type_labels[cancer_type_now]," is ", ct_DNA_sensitivity[cancer_type_now,"total"], "%, indicating they are ctDNA positive cancers (",
+                          ct_DNA_sensitivity[cancer_type_now,"early"],"% of cancers in early stages, ",
+                          ct_DNA_sensitivity[cancer_type_now,"late"] ,"% of cancers 
+                          in late stages)."), br(), br(),
                    f_chips_and_bins_3c(cancer_type_now,
                                        elici_minis_3c,
                                        elici_maxis_3c,
@@ -312,82 +309,6 @@ f_section_1_2_questions <- function(cancer_type_now,
       
       }
     
-  # } else if(buttons_next_que_3c == 0) {
-  #   
-  #   tagList(div(
-  #     
-  #     ifelse(cancer_type_now != buttons_cancer_types & buttons_view_ctDNA_evidence == 0,
-  #              tagList(div(
-  #                fluidRow(
-  #                  column(9, p(style = "font-size:90%;", "If you would like to view evidence on on ctDNA cancers again, please click on 'View'.")),
-  #                  column(1,
-  #                         actionButton(paste0("view_ctDNA_evidence_", cancer_type_now), "View", width = '120px', style="background-color: lightgrey"))
-  #                ), br(), br()
-  #              )),
-  #              tagList(div(
-  #                strong("Survival for cancers detected vs not detected by Galleri"), br(),
-  #                "Add description", br(), br(),
-  #                img(src="ctDNA_plot_1.jpeg", height="100%", width="100%", align = "left"),
-  #                strong("Signal detection in samples prior to cancer diagnosis"), br(),
-  #                "Add description", br(),br(),
-  #                img(src="ctDNA_plot_2.jpeg", height="100%", width="100%", align = "left"),
-  #                br(),br()
-  #              ))
-  #       ),
-  #       
-  #       strong(paste0("Do you believe that the ctDNA cancers detected by Galleri are the most progressive of ", cancer_type_labels[cancer_type_now], "s?")), br(), 
-  #       radioButtons(paste0("elicit_3a_", cancer_type_now), "",
-  #                    choices = c("Yes" = 1, "No" = 0),
-  #                    selected = elici_3a),
-  #       fluidRow(
-  #         column(9, p(style = "font-size:90%;", "Please click on 'Next' to continue.")),
-  #         column(1,
-  #                actionButton(paste0("next_que_3a_", cancer_type_now), "Next", width = '120px', style="background-color: lightgrey"))
-  #       ), br(), br(),
-  #     hr(), br(),
-  #     
-  #     ifelse(buttons_next_que_3a == 1 & elici_3a == 1,
-  #            tagList(div(
-  #              
-  #              paste0("Galleri’s test sensitivity for ", cancer_type_labels[cancer_type_now]," is ", ct_DNA_sensitivity[cancer_type_now,"total"], "% (",
-  #                     ct_DNA_sensitivity[cancer_type_now,"early"],"% in early stages, ",
-  #                     ct_DNA_sensitivity[cancer_type_now,"late"] ,"% in late stages)."), br(), br(),
-  #              paste0("The predicted sojourn time for the ", ct_DNA_sensitivity[cancer_type_now,"total"],
-  #                     "% fastest progressing ", cancer_type_labels[cancer_type_now],
-  #                     "s (using a statistical model applied to your answer to question 1c) is ",
-  #                     omst_ctDNA, " years. "), br(), br(),
-  #              strong("Is this value reflective of your beliefs on the MST of the ctDNA cancers detected by the Galleri test?"),
-  #              radioButtons(paste0("elicit_3b_", cancer_type_now), "",
-  #                           choices = c("Yes" = 1, "No" = 0),
-  #                           selected = elici_3b),
-  #              fluidRow(
-  #                column(9, p(style = "font-size:90%;", "Please click on 'Next' to continue.")),
-  #                column(1,
-  #                       actionButton(paste0("next_que_3b_", cancer_type_now), "Next", width = '120px', style="background-color: lightgrey"))
-  #              ), br(), br(),
-  #              hr(), br(),
-  #              ifelse(buttons_next_que_3b == 1,
-  #                     tagList(div(f_chips_and_bins_3c(cancer_type_now,
-  #                                                     elici_minis_3c,
-  #                                                     elici_maxis_3c,
-  #                                                     chips_nchip_3c,
-  #                                                     chips_chips_3c,
-  #                                                     chips_lbins_3c,
-  #                                                     chips_rbins_3c,
-  #                                                     show_plot_3c,
-  #                                                     enter_plot_3c,
-  #                                                     comments_3c,
-  #                                                     mode_omst_all)
-  #                                 )),
-  #                     tagList(div("")))
-  #              )),
-  #            tagList(div(""))
-  #            )
-  #     
-  #         )) #end of question 3
-  #   
-  # 
-  # }
   
   )
   

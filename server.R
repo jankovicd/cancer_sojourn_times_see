@@ -998,11 +998,13 @@ function (input, output, session) {
     
     observeEvent(input[[paste0("next_que_section_3_", i)]],{
       
+      que_name <- cancer_types[i]
+      
       #if they've answered the questions, save the answer
       if(length(elici_section_3[[que_name]]) > 0){
         save_sec_3 <- c(buttons$expert_id, que_name, elici_section_3[[que_name]])
         save_sec_3_colnames <- c("expert_id", "cancer_type", paste0("cancert_type_", 1:length(elici_section_3[[que_name]])))
-        f_save(save_sec_3, paste0(buttons$expert_id, "_sec_3_", i, ".csv"))
+        f_save(save_sec_3, save_sec_3_colnames, paste0(buttons$expert_id, "_sec_3_", i, ".csv"))
       }
       
       if(i<21){
@@ -2075,9 +2077,11 @@ function (input, output, session) {
       
       output[[paste0("section_3_ques_",i)]]<-renderUI({
         
+        que_name <- cancer_types[i]
+        
         tagList(div(
           
-          f_section_3_quesions(i)
+          f_section_3_quesions(i, elici_section_3[[que_name]])
           
         ))
         
@@ -2087,5 +2091,4 @@ function (input, output, session) {
   
   
 }
-
 

@@ -339,14 +339,18 @@ f_chips_and_bins_test <- function(elici_minis,
 
 )
 
-f_section_3_quesions <- function(cancer_type_now)
+f_section_3_quesions <- function(cancer_type_now, elici_section_3)
   
   p(
+    # "elici_section_3[[que_name]] =", elici_section_3, br(),
+    #"input[[paste0('section_3_', cancer_type_now)]] =", input[[paste0("section_3_", cancer_type_now)]], br(),
+    # "cancer_type_now =", cancer_type_now, br(),
+    #"input[[paste0('next_que_section_3_', cancer_type_now)]] =", input[[paste0("next_que_section_3_", cancer_type_now)]], br(),
     strong(paste0("Which of the following cancers (that you have already expressed beliefs about) do you believe ",
                   cancer_type_labels[cancer_type_now], " is likely to have the most similar overall mean sojourn time?")), br(),
     em("Note that we are interested in all ", cancer_type_labels[cancer_type_now],
        " (ctDNA and non-ctDNA) in England. You can select more than one cancer type."), br(), br(),
-    checkboxGroupInput(paste0("section_3_", cancer_type_now)," ",c(
+    checkboxGroupInput(paste0("elici_section_3_", cancer_type_now)," ",c(
       "Breast" = 1,
       "Lung/Bronchus" = 2,
       "Colon/Rectum" = 3,
@@ -357,7 +361,7 @@ f_section_3_quesions <- function(cancer_type_now)
       "Head and neck" = 8,
       "Lymphoma" = 9,
       "Oesophagus" = 10,
-      "Pancreas" = 11), selected = paste0("elici_section_3_",cancer_type_now)), br(), br(),
+      "Pancreas" = 11), selected = elici_section_3), br(), br(),
     fluidRow(
       column(9, p(style="font-size:90%;", "Click on 'Next' to continue.")),
       column(1, actionButton(paste0("next_que_section_3_", cancer_type_now), "Next", width='120px', style="background-color: lightgrey"))
