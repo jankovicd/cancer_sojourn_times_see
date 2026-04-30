@@ -1,22 +1,4 @@
 
-# # total number of elicitation questions
-# tot_eli_ques <- length (quantity)
-# 
-# # list of elicitation questions for use in reactive values and output objects
-# eli_que_names <- paste0("que_",1:tot_eli_ques)
-# 
-# # number of "pages" on the Home tab, used in server.R file
-# # to determine when to skip to the next tab
-# last_home_page <- 1 + include_consent + include_about_you
-
-if(!exists("dummy_app")){ # if dummy_app doesn't exist (e.g. when deploying the app) assume the app is live
-
-  dummy_app <- FALSE
-
-}
-
-save_method <- "local"
-
 ########## functions ##########
 
 ###### elicitation ######
@@ -531,24 +513,6 @@ f_derive_omst_ctDNA <- function (mode_omst_all, elici_1c, ct_DNA_sensitivity){
   
   return(omst_ctDNA)
   
-}
-
-
-####### saving functions (no longer used as Shiny no longer supports dropbox) #######
-
-f_save <- function(data, que_colnames, name_of_file) {
-  
-  data <- t(data)
-  colnames(data) <- que_colnames
-  # Create a unique file name
-  #fileName <- sprintf(name, as.integer(Sys.time()), digest::digest(data))
-  fileName <- name_of_file
-  # Write the data to a temporary file locally
-  filePath <- file.path(ifelse(app_hosting == "shiny.io", tempdir(), outputDir), fileName)
-  write.csv(
-    x = data,
-    file = filePath,
-    row.names = FALSE, quote = TRUE)
 }
 
 
